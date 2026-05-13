@@ -60,18 +60,6 @@ node app.js
 
 6. Buka `catalog.html` melalui browser atau web server lokal yang mengarah ke root project.
 
-## Konfigurasi Environment (.env)
-File `.env` berisi konfigurasi database lokal:
-
-```env
-DB_USER=api_user
-DB_HOST=localhost
-DB_NAME=catalog
-DB_PASSWORD=123456
-DB_PORT=5432
-```
-
-> Catatan: `Server/app.js` saat ini belum membaca `.env` secara otomatis. Untuk produksi, tambahkan `require('dotenv').config()` pada baris awal `app.js`.
 
 ## Endpoint API Utama
 - `GET /api/catalog` - daftar fitur GeoJSON dengan pagination dan filter.
