@@ -362,6 +362,16 @@
         color: #1e40af;
         border: 1px solid #bfdbfe;
       }
+      .badge-gf {
+        background: #fff7ed;
+        color: #c2410c;
+        border: 1px solid #fdba74;
+      }
+      .badge-zy {
+        background: #f5f3ff;
+        color: #6d28d9;
+        border: 1px solid #c4b5fd;
+      }
       .badge-other {
         background: #f4f5f7;
         color: #8e97a8;
@@ -1063,6 +1073,8 @@
         if (sat.startsWith("bj")) return { cls: "badge-bj", label: "BJ" };
         if (sat.startsWith("jl")) return { cls: "badge-jl", label: "JL" };
         if (sat.startsWith("sv")) return { cls: "badge-sv", label: "SV" };
+        if (sat.startsWith("gf")) return { cls: "badge-gf", label: "GF" };
+        if (sat.startsWith("zy")) return { cls: "badge-zy", label: "ZY" };
         return { cls: "badge-other", label: satellite || "—" };
       }
 
