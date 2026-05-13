@@ -18,9 +18,6 @@ Aplikasi ini menyediakan antarmuka peta interaktif berbasis Leaflet dan backend 
 - Integrasi WMS GeoServer untuk rendering layer tile.
 - Cache frontend untuk meminimalkan permintaan API berulang.
 
-## Screenshot Tampilan Aplikasi
-> Screenshot belum tersedia di repository. Tambahkan gambar hasil tampilan aplikasi di `docs/assets/screenshot.png` jika ingin melengkapi dokumentasi visual.
-
 ## Arsitektur Sistem Sederhana
 - Frontend: `catalog.html` menggunakan Leaflet, Vanilla JS, CSS.
 - Backend API: `Server/app.js` dengan Express, PostgreSQL, PostGIS.
