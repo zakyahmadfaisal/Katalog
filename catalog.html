@@ -550,6 +550,22 @@
         position: relative;
         border-top: 1px solid var(--border-light);
         border-bottom: 1px solid var(--border-light);
+        background: var(--off-white);
+        min-height: 60px;
+      }
+
+      /* FIX #8 — fallback placeholder saat gambar gagal load */
+      .img-no-preview {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 80px;
+        color: var(--text-muted);
+        font-size: 11px;
+        gap: 6px;
+        border-top: 1px solid var(--border-light);
+        border-bottom: 1px solid var(--border-light);
+        background: var(--off-white);
       }
 
       .img-overlay {
@@ -857,12 +873,13 @@
         satellite: "ALL",
         catalog: "STARVISION",
         province: "ALL",
-        // FIX #1: offset dikelola terpisah — satu untuk list utama, satu untuk scroll
         listOffset: 0,
         limit: 50,
         isLoading: false,
         hasMore: true,
         selectedLayer: null,
+        // FIX #4 — track selected feature ID untuk guard double-click
+        selectedFeatureId: null,
         mapRequestId: 0,
         listRequestId: 0,
         loadedIds: new Set(),
@@ -872,7 +889,6 @@
 
       let mapController = null;
       let listController = null;
-      // FIX #2: pisahkan flag isUserAction agar tidak di-race oleh event lain
       let pendingUserAction = false;
 
       /* ========================= getFilterKey ========================= */
@@ -910,7 +926,6 @@
           if (listController) listController.abort();
           listController = new AbortController();
 
-          // FIX #3: gunakan listOffset yang sudah benar
           let page = Math.floor(STATE.listOffset / STATE.limit);
           let bboxQuery = "";
 
@@ -1063,7 +1078,7 @@
         map.getPane("interactionPane").style.zIndex = 650;
 
         activeOverlay.on("error", () => {
-          console.error("Overlay gagal load:", feature.properties.quicklook);
+          console.warn("Overlay gagal load:", feature.properties.quicklook);
         });
       }
 
@@ -1151,6 +1166,8 @@
           geoLayer.resetStyle(STATE.selectedLayer);
           STATE.selectedLayer = null;
         }
+        // FIX #4 — reset selectedFeatureId saat panel ditutup
+        STATE.selectedFeatureId = null;
         document
           .querySelectorAll(".item")
           .forEach((el) => el.classList.remove("active"));
@@ -1158,6 +1175,9 @@
 
       /* ========================= FEATURE ========================= */
       async function zoomToFeatureAndSelect(f, id) {
+        // FIX #4 — guard double-click pada fitur yang sama
+        if (STATE.selectedFeatureId === id && STATE.isSelectingFeature) return;
+
         try {
           if (layerMap[id]) {
             selectFeature(f, layerMap[id]);
@@ -1165,6 +1185,7 @@
           }
 
           STATE.isSelectingFeature = true;
+          STATE.selectedFeatureId = id;
 
           const res = await fetch(
             `${CONFIG.apiBase}/catalog/${id}?catalog=${encodeURIComponent(STATE.catalog)}`,
@@ -1190,6 +1211,7 @@
         } catch (err) {
           console.error("zoomToFeatureAndSelect ERROR:", err);
           STATE.isSelectingFeature = false;
+          STATE.selectedFeatureId = null;
         }
       }
 
@@ -1201,6 +1223,7 @@
         if (!layer) return;
 
         STATE.isSelectingFeature = true;
+        STATE.selectedFeatureId = getId(f);
 
         if (STATE.selectedLayer && geoLayer) {
           geoLayer.resetStyle(STATE.selectedLayer);
@@ -1231,6 +1254,29 @@
           return `<tr><td>${escapeHTML(String(label))}</td><td>${escapeHTML(String(value))}</td></tr>`;
         }
 
+        // FIX #8 — quicklook dengan fallback placeholder yang lebih baik
+        const quicklookHTML = p.quicklook
+          ? `<div class="img-preview-wrap">
+               <img
+                 class="img-preview"
+                 src="${escapeHTML(p.quicklook)}"
+                 loading="lazy"
+                 onerror="this.parentElement.outerHTML='<div class=\\'img-no-preview\\'><svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'16\\' height=\\'16\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg>Quicklook tidak tersedia</div>'"
+               />
+               <div class="img-overlay"></div>
+             </div>`
+          : `<div class="img-no-preview">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+               Quicklook tidak tersedia
+             </div>`;
+
+        // FIX #11 — periode dengan title tooltip untuk nilai penuh
+        const periodeShort =
+          formatDate(p.acquisition_date) !== "—"
+            ? formatDate(p.acquisition_date).slice(0, 7)
+            : "—";
+        const periodeFull = formatDate(p.acquisition_date);
+
         let html = `
     <div class="panel-title">${escapeHTML(p.layer_name || "")}</div>
     <div class="panel-subtitle">
@@ -1239,16 +1285,7 @@
       <span>${escapeHTML(p.sensor || "—")}</span>
     </div>
 
-    ${
-      p.quicklook
-        ? `
-      <div class="img-preview-wrap">
-        <img class="img-preview" src="${escapeHTML(p.quicklook)}" onerror="this.parentElement.style.display='none'"/>
-        <div class="img-overlay"></div>
-      </div>
-    `
-        : ""
-    }
+    ${quicklookHTML}
 
     <div class="stat-grid">
       <div class="stat-card highlight">
@@ -1259,14 +1296,8 @@
         <div class="stat-value">${p.gsd ? p.gsd + "m" : "—"}</div>
         <div class="stat-key">GSD</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-value">
-          ${
-            formatDate(p.acquisition_date) !== "—"
-              ? formatDate(p.acquisition_date).slice(0, 7)
-              : "—"
-          }
-        </div>
+      <div class="stat-card" title="${periodeFull}">
+        <div class="stat-value">${periodeShort}</div>
         <div class="stat-key">Periode</div>
       </div>
     </div>
@@ -1301,7 +1332,7 @@
           duration: 0.8,
         });
 
-        // FIX #4: pastikan moveend hanya terdaftar sekali
+        // FIX #4 — gunakan once agar listener tidak menumpuk
         map.once("moveend", () => {
           showQuicklookOverlay(f, layer);
           setTimeout(() => {
@@ -1321,7 +1352,6 @@
         let requestId = ++STATE.mapRequestId;
         STATE.limit = getDynamicLimit();
 
-        // FIX #5: reset listOffset dan hasMore saat load baru
         STATE.listOffset = 0;
         STATE.hasMore = true;
         STATE.loadedIds.clear();
@@ -1342,8 +1372,8 @@
           let cached = STATE.cache.get(cacheKey);
           renderMap(cached.map || []);
           buildList(cached.list || [], true);
-          // FIX #6: update listOffset dari cache
           STATE.listOffset = (cached.list || []).length;
+          STATE.hasMore = STATE.listOffset >= STATE.limit;
           document.getElementById("count").innerText =
             (cached.list || []).length + " layer";
           STATE.isLoading = false;
@@ -1373,7 +1403,6 @@
 
             buildList(listFeatures, true);
 
-            // FIX #7: update listOffset setelah data masuk
             STATE.listOffset = listFeatures.length;
             STATE.hasMore = listFeatures.length >= STATE.limit;
 
@@ -1406,6 +1435,7 @@
       }, 300);
 
       function setSatellite(type, el) {
+        if (STATE.satellite === type) return; // FIX #10 — hindari reload jika tidak ada perubahan
         STATE.satellite = type;
         STATE.cache.clear();
         document
@@ -1438,7 +1468,6 @@
           lastCenter = center;
           lastZoom = zoom;
 
-          // FIX #8: cek pendingUserAction, tidak pakai isUserAction yang bisa race
           if (pendingUserAction || STATE.isSelectingFeature) {
             pendingUserAction = false;
             return;
@@ -1448,15 +1477,18 @@
         }, 1200),
       );
 
+      // FIX #1 — sync STATE.catalog dengan nilai awal dropdown
       document
         .getElementById("catalog-filter")
         .addEventListener("change", function () {
           STATE.catalog = this.value;
           STATE.cache.clear();
           pendingUserAction = true;
+          updateWMSIfNeeded();
           loadData();
         });
 
+      // FIX #2 — province change: cegah double loadData dari moveend
       document
         .getElementById("province-filter")
         .addEventListener("change", async function () {
@@ -1466,10 +1498,18 @@
 
           await zoomToProvince(this.value);
 
+          // Tunggu animasi selesai, lalu load — moveend sudah diblock oleh pendingUserAction
           setTimeout(() => {
+            pendingUserAction = true; // pastikan flag masih aktif setelah timeout
             loadData();
-          }, 300);
+          }, 400);
         });
+
+      // FIX #1 — set active-filter di awal untuk semua kontrol
+      document.addEventListener("DOMContentLoaded", () => {
+        // Sync catalog state dengan nilai awal dropdown
+        STATE.catalog = document.getElementById("catalog-filter").value;
+      });
 
       document
         .querySelector("#satellite-filter button")
@@ -1510,7 +1550,7 @@
       document
         .getElementById("list-wrap")
         .addEventListener("scroll", function () {
-          // FIX #9: guard lebih ketat — tidak boleh loading dan harus ada more
+          // FIX #6 — guard ketat: isLoading, hasMore, dan pastikan listOffset sudah final
           if (STATE.isLoading || !STATE.hasMore) return;
 
           if (this.scrollTop + this.clientHeight >= this.scrollHeight - 200) {
@@ -1532,8 +1572,6 @@
             let bboxKey = bbox ? getBBoxKey(bbox) : "GLOBAL";
             let filterKey = getFilterKey();
             let cacheKey = `${bboxKey}|${filterKey}`;
-
-            // FIX #10: pageKey dihitung dari listOffset yang sudah benar
             let pageKey = `${cacheKey}|page:${STATE.listOffset}`;
 
             if (STATE.cache.has(pageKey)) {
@@ -1554,7 +1592,6 @@
 
                 let features = d.data;
 
-                // Cache dengan key berbasis offset sebelum update
                 setCache(pageKey, features);
 
                 if (features.length === 0) {
@@ -1563,8 +1600,6 @@
                 }
 
                 buildList(features, false);
-
-                // FIX #11: update listOffset SETELAH buildList
                 STATE.listOffset += features.length;
 
                 if (features.length < STATE.limit) {
@@ -1585,13 +1620,14 @@
           }
         });
 
-      // FIX #12: klik map untuk menutup panel — handle overlay quicklook agar tidak menghalangi
+      // FIX #7 — cek geoLayer sebelum hide panel, skip jika klik pada leaflet-interactive
       map.on("click", function (e) {
         const target = e.originalEvent.target;
-        // Abaikan klik pada polygon interaktif atau elemen sidebar/panel
-        if (target.closest(".leaflet-interactive")) return;
-        if (target.closest("#panel") || target.closest("#sidebar")) return;
-        hidePanel();
+        if (target.closest && target.closest(".leaflet-interactive")) return;
+        if (target.closest && (target.closest("#panel") || target.closest("#sidebar"))) return;
+        if (document.getElementById("panel").classList.contains("open")) {
+          hidePanel();
+        }
       });
 
       /* ========================= HIGHLIGHT ========================= */
@@ -1627,8 +1663,6 @@
 
       /* ========================= build WMS Layer ========================= */
       function buildWMSLayer() {
-        if (STATE.province !== "ALL") return null;
-
         let workspace;
         let layerName;
         let keywordField;
@@ -1646,7 +1680,6 @@
         let cql = [];
 
         if (STATE.satellite !== "ALL") {
-          // FIX #13: sanitasi single quote untuk CQL
           const safeSat = STATE.satellite.replace(/'/g, "''");
           cql.push(`satellite ILIKE '${safeSat}%'`);
         }
@@ -1654,6 +1687,12 @@
         if (STATE.keyword) {
           const safeKeyword = STATE.keyword.replace(/'/g, "''");
           cql.push(`${keywordField} ILIKE '%${safeKeyword}%'`);
+        }
+
+        // FIX #9 — tambah province filter ke WMS CQL jika dipilih
+        if (STATE.province !== "ALL") {
+          const safeProv = STATE.province.replace(/'/g, "''");
+          cql.push(`provinsi = '${safeProv}'`);
         }
 
         let cqlFilter = cql.length > 0 ? cql.join(" AND ") : "INCLUDE";
@@ -1674,15 +1713,9 @@
 
       /* ========================= update WMS If Needed ========================= */
       function updateWMSIfNeeded() {
-        let b = map.getBounds();
-        let currentBBox = [
-          b.getWest().toFixed(4),
-          b.getSouth().toFixed(4),
-          b.getEast().toFixed(4),
-          b.getNorth().toFixed(4),
-        ].join(",");
-
-        let newKey = getFilterKey();
+        // FIX #9 — cek apakah filter benar-benar berubah sebelum rebuild WMS
+        const newFilterKey = getFilterKey();
+        if (newFilterKey === STATE.lastFilterKey && wmsLayer) return;
 
         if (wmsLayer) {
           map.removeLayer(wmsLayer);
@@ -1699,8 +1732,7 @@
           geoLayer.bringToFront();
         }
 
-        STATE.lastFilterKey = newKey;
-        STATE.lastBBoxKey = currentBBox;
+        STATE.lastFilterKey = newFilterKey;
       }
 
       /* ========================= getBBoxKey ========================= */
@@ -1732,9 +1764,10 @@
 
       /* ========================= highlightText ========================= */
       function highlightText(text) {
-        if (!STATE.keyword) return escapeHTML(text || "");
-        let safeText = escapeHTML(text);
-        // FIX #14: escape special regex characters di keyword
+        // FIX #5 — pastikan text selalu string sebelum diproses
+        const safeInput = text != null ? String(text) : "";
+        if (!STATE.keyword) return escapeHTML(safeInput);
+        let safeText = escapeHTML(safeInput);
         let escaped = STATE.keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         let regex = new RegExp(`(${escaped})`, "gi");
         return safeText.replace(
