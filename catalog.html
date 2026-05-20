@@ -357,6 +357,11 @@
         color: #b91c1c;
         border: 1px solid #fecaca;
       }
+      .badge-lb {
+        background: #ecfeff;
+        color: #0f766e;
+        border: 1px solid #99f6e4;
+      }
       .badge-sv {
         background: #eff6ff;
         color: #1e40af;
@@ -786,11 +791,12 @@
         <div class="filter-label">Filter Satelit</div>
         <div id="satellite-filter">
           <button onclick="setSatellite('ALL', this)">ALL</button>
-          <button onclick="setSatellite('BJ', this)">Beijing</button>
-          <button onclick="setSatellite('JL', this)">Jilin</button>
-          <button onclick="setSatellite('SV', this)">SuperView</button>
-          <button onclick="setSatellite('GF', this)">Gaofen</button>
-          <button onclick="setSatellite('ZY', this)">Ziyuan</button>
+          <button onclick="setSatellite('BJ', this)">BJ</button>
+          <button onclick="setSatellite('JL', this)">JL</button>
+          <button onclick="setSatellite('LB', this)">LB</button>
+          <button onclick="setSatellite('SV', this)">SV</button>
+          <button onclick="setSatellite('GF', this)">GF</button>
+          <button onclick="setSatellite('ZY', this)">ZY</button>
         </div>
       </div>
 
@@ -1087,6 +1093,7 @@
         const sat = (satellite || "").toLowerCase();
         if (sat.startsWith("bj")) return { cls: "badge-bj", label: "BJ" };
         if (sat.startsWith("jl")) return { cls: "badge-jl", label: "JL" };
+        if (sat.startsWith("lb")) return { cls: "badge-lb", label: "LB" };
         if (sat.startsWith("sv")) return { cls: "badge-sv", label: "SV" };
         if (sat.startsWith("gf")) return { cls: "badge-gf", label: "GF" };
         if (sat.startsWith("zy")) return { cls: "badge-zy", label: "ZY" };
@@ -1624,7 +1631,11 @@
       map.on("click", function (e) {
         const target = e.originalEvent.target;
         if (target.closest && target.closest(".leaflet-interactive")) return;
-        if (target.closest && (target.closest("#panel") || target.closest("#sidebar"))) return;
+        if (
+          target.closest &&
+          (target.closest("#panel") || target.closest("#sidebar"))
+        )
+          return;
         if (document.getElementById("panel").classList.contains("open")) {
           hidePanel();
         }
