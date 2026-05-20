@@ -35,11 +35,9 @@ pool.on("error", (err) => {
    CORS
 ========================= */
 // FIX #15 — CORS hanya izinkan origin localhost untuk keamanan presentasi
-app.use(
-  cors({
-    origin: ["http://localhost", "http://127.0.0.1", /^http:\/\/localhost:\d+$/],
-  }),
-);
+app.use(cors({
+  origin: "*"
+}));
 
 /* =========================
    STATIC QUICKLOOK
@@ -129,7 +127,7 @@ function getCatalogConfig(catalog = "STARVISION") {
       REPLACE(
         i.img_path,
         '/home/pusdatin/LASAC/Quicklook/JPG/',
-        'http://localhost:3000/quicklook/lasac/'
+        'http://10.18.170.29:3000/quicklook/lasac/'
       ) AS quicklook,
       ST_AsGeoJSON(i.geom)::json AS geometry
     `,
@@ -442,7 +440,6 @@ app.get("/api/health", async (req, res) => {
 /* =========================
    START SERVER
 ========================= */
-app.listen(3000, "127.0.0.1", () => {
-  // FIX #15 — bind ke 127.0.0.1 saja, bukan 0.0.0.0
-  console.log("API running on http://127.0.0.1:3000");
+app.listen(3000, "0.0.0.0", () => {
+  console.log("API running on http://0.0.0.0:3000");
 });

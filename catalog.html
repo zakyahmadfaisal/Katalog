@@ -746,7 +746,7 @@
       <div class="sidebar-topbar">
         <div class="brand">
           <div class="brand-icon">
-            <img src="http://localhost/quicklook/brin.png" class="logo-brin" />
+            <img src="http://10.18.170.29/quicklook/brin.png" class="logo-brin" />
           </div>
           <div>
             <div class="brand-title">Katalog Citra Satelit</div>
@@ -909,7 +909,7 @@
 
       /* ========================= CONFIG ========================= */
       const CONFIG = {
-        apiBase: "http://localhost:3000/api",
+        apiBase: "http://10.18.170.29:3000/api",
       };
 
       /* ========================= API ========================= */
@@ -1709,7 +1709,7 @@
         let cqlFilter = cql.length > 0 ? cql.join(" AND ") : "INCLUDE";
 
         return L.tileLayer.wms(
-          "http://localhost:8082/geoserver/" + workspace + "/wms",
+          "http://10.18.170.29:8082/geoserver/" + workspace + "/wms",
           {
             layers: workspace + ":" + layerName,
             format: "image/png",
