@@ -76,7 +76,6 @@ node app.js
 ## Known Issues / Limitation
 - `.env` ada tetapi tidak dimuat otomatis oleh `app.js`.
 - Static quicklook path di backend masih hardcoded ke `/home/pusdatin/...`.
-- CORS hanya mengizinkan origin localhost.
 - No unit test untuk API atau frontend.
 - Data WMS bergantung pada GeoServer eksternal.
 

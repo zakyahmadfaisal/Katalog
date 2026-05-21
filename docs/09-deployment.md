@@ -31,7 +31,7 @@ CREATE EXTENSION postgis;
 ## Konfigurasi Port
 - Backend API ditetapkan di `http://127.0.0.1:3000`.
 - Frontend `catalog.html` dapat diakses melalui browser lokal.
-- GeoServer biasanya berjalan di `http://localhost:8082`.
+- GeoServer biasanya berjalan di `http://10.18.170.29:8082`.
 
 ## Struktur Static Quicklook
 - API backend menyajikan file static:

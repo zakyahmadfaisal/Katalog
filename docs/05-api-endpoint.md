@@ -39,7 +39,7 @@ GET /api/catalog?keyword=JAKARTA&satellite=SV&province=DKI%20Jakarta&catalog=STA
         "gsd": 0.5,
         "lon_ctr": 106.8,
         "lat_ctr": -6.2,
-        "quicklook": "http://localhost:3000/quicklook/..."
+        "quicklook": "http://10.18.170.29:3000/quicklook/..."
       }
     }
   ]
@@ -106,7 +106,7 @@ GET /api/catalog/123?catalog=LASAC
     "gsd": null,
     "lon_ctr": 103.4,
     "lat_ctr": -2.9,
-    "quicklook": "http://localhost:3000/quicklook/lasac/..."
+    "quicklook": "http://10.18.170.29:3000/quicklook/lasac/..."
   }
 }
 ```

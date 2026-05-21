@@ -15,7 +15,7 @@
 
 ## Backend API
 - Express melayani endpoint `/api/*`.
-- `cors` diatur untuk origin localhost.
+- `cors` diatur untuk origin 10.18.170.29.
 - Query ke PostgreSQL menggunakan `pg.Pool`.
 - Sanitasi input untuk catalog, satellite, bbox, dan pagination.
 
